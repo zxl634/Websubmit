@@ -1,6 +1,61 @@
 #!/usr/bin/env python3
+# -*- coding:utf-8 -*-
 import pickle
 import os
+import re
+import validators
+from selenium import webdriver
+import os.path
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+def get_filename_from_url(url):
+    # Extract ex no
+    ex_pos = url.find("ex")
+    exno = url[ex_pos:ex_pos+len(url)]
+    exno = exno.replace("=", "").capitalize()
+
+    # Extract title
+    title_pos = url.rfind("/")
+    full_title = url[title_pos+1:ex_pos-1]
+    title_split = full_title.split("-")
+    title = ""
+    for w in title_split:
+        title += w[0:3].capitalize()
+
+    title = title + exno + ".py"
+    return title
+
+
+def get_code_template(driver):
+    # Locate code editor and get code template
+    try:
+        # el_id = "ace-code-editor-6"
+        el_id = get_ace_id()
+        WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, el_id))
+                )
+    finally:
+        script = 'return ace.edit("' + get_ace_id() + '").getValue()'  # noqa: E501
+        return driver.execute_script(script)
+
+
+def start_driver():
+    # Using Chrome to access web
+    driver = webdriver.Chrome("./chromedriver")
+
+    # Check whether user cookie is present to avoid signing in
+    if os.path.isfile(getPath()):
+        driver.get("https://datacamp.com")
+        load_cookie(driver)
+
+    else:
+        # Sign in
+        signin(driver)
+
+    return driver
 
 
 def getPath():
@@ -24,22 +79,36 @@ def load_cookie(driver):
             driver.add_cookie(cookie)
 
 
-def create_script():
-    with open('ex2.py', 'r') as myfile:
-        # script = 'ace.edit("ace-code-editor-6").setValue("the new text here")' # noqa
-        file_content = myfile.read()
-        # print(file_content)
-        script = str(
+def validate_url(url):
+    if not validators.url(url):
+        exit("not valid url: " + url)
+    else:
+        return url
+
+
+def read_url(filename):
+    with open(filename, 'r') as myfile:
+        for i, line in enumerate(myfile):
+            if i == 2:
+                url = re.sub("# ", "", line)
+                validate_url(url)
+                return url
+
+
+def get_ace_id():
+    return "ace-code-editor-6"
+
+
+def create_script(filename):
+    with open(filename, 'r') as myfile:
+        file_content = myfile.read().replace("\n", r"\n")
+        script = (
                 '''ace.edit("ace-code-editor-6").setValue("''' +
-                # r'''# Create a list containing the names: baby_names\n''' +
-                # '''baby_names = ['Ximena', 'Aliza', 'Ayden', 'Calvin']''' +
                 file_content +
                 '''")'''
                 )
+
         return script
-
-
-print(create_script())
 
 
 def signin(driver):

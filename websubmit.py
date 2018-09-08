@@ -5,41 +5,51 @@
 # It first logs the user in and then navigates to the desired site
 # where it copy-pastes the script
 
-from selenium import webdriver
-# from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 import websubmitFuncs
-import os.path
-import time
+import argparse
 
-# Using Chrome to access web
-driver = webdriver.Chrome("./chromedriver")
 
-# Check whether user cookie is present to avoid signing in
-if os.path.isfile(websubmitFuncs.getPath()):
-    driver.get("https://datacamp.com")
-    websubmitFuncs.load_cookie(driver)
+def main():
+    # Read filename
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+            'exercise_file',
+            help='exercise file including url to exercise')
+    args = parser.parse_args()
+    filename = args.exercise_file
 
-else:
-    # Sign in
-    websubmitFuncs.signin(driver)
+    # Navigate to page to paste code in
+    driver = websubmitFuncs.start_driver()
 
-# Navigate to page to paste code in
-url = "https://campus.datacamp.com/courses/data-types-for-data-science/fundamental-data-types?ex=2" # noqa
-driver.get(url)
+    # Read url from exercise
+    url = websubmitFuncs.read_url(filename)
+    # url = "https://campus.datacamp.com/courses/data-types-for-data-science/fundamental-data-types?ex=2" # noqa
+    driver.get(url)
 
-# Locate code editor and paste answer
-try:
-    el_id = "ace-code-editor-6"
-    el = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, el_id))
-            )
-finally:
-    script = websubmitFuncs.create_script()
-    # script = 'ace.edit("ace-code-editor-6").setValue("the new text here")' # noqa
-    time.sleep(3)
-    print(script)
+    # Locate code editor and paste answer
+    try:
+        el_id = "ace-code-editor-6"
+        WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, el_id))
+                )
+    finally:
+        script = websubmitFuncs.create_script(filename)
+        driver.execute_script(script)
 
-    driver.execute_script(script)
+    # Submit answer
+    actions = ActionChains(driver)
+    actions.send_keys(Keys.LEFT_CONTROL + Keys.LEFT_SHIFT + Keys.ENTER)
+    actions.perform()
+
+    # Await user input
+    input_text = input("Have you seen enough?")
+    print(input_text)
+
+
+if __name__ == '__main__':
+    main()
