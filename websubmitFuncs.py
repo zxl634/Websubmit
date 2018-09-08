@@ -9,6 +9,7 @@ import os.path
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import config
 
 
 def get_filename_from_url(url):
@@ -118,12 +119,14 @@ def signin(driver):
     # Submit e-mail
     el_id = "user_email"
     el = driver.find_element_by_id(el_id)
-    el.send_keys("avr@moos-bjerre.dk")
+    # el.send_keys("avr@moos-bjerre.dk")
+    el.send_keys(config.user)
 
     # Submit password
     el_id = "user_password"
     el = driver.find_element_by_id(el_id)
-    el.send_keys("3gCNXg46T3yE")
+    # el.send_keys("3gCNXg46T3yE")
+    el.send_keys(config.pw)
 
     # Sign In
     el_name = "commit"
